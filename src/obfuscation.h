@@ -16,12 +16,14 @@ constexpr size_t key() {
 
 #define KEY key()
 
-__forceinline constexpr void encryptW(wchar_t* a, size_t size, size_t key) {
+template <typename T>
+__forceinline constexpr void encrypt(T* a, size_t size, size_t key) {
     for (size_t i = 0; i < size; i++)
-        a[i] ^= (wchar_t)key;
+        a[i] ^= (T)key;
 }
 
-__forceinline constexpr void decryptW(wchar_t* a, size_t size, size_t key) {
+template <typename T>
+__forceinline constexpr void decrypt(T* a, size_t size, size_t key) {
     for (size_t i = 0; i < size; i++)
     {
         const __m128i xor_key_m128 = _mm_cvtsi32_si128(key);
@@ -32,71 +34,30 @@ __forceinline constexpr void decryptW(wchar_t* a, size_t size, size_t key) {
     }
 };
 
-template<size_t size, size_t key>
-class ObfW {
-public:
-    constexpr ObfW(const wchar_t* str) {
-        for (size_t i = 0; i < size; i++)
-            data[i] = str[i];
-
-        encryptW(data, size, key);
-    }
-
-    constexpr const wchar_t* getData() const {
-        decryptW(const_cast<wchar_t*>(data), size, key);
-
-        return &data[0];
-    }
-
-private:
-    wchar_t data[size]{};
-};
-
-__forceinline constexpr void encrypt(char* a, size_t size, size_t key) {
-    for (size_t i = 0; i < size; i++)
-        a[i] ^= (char)key;
-}
-
-__forceinline constexpr void decrypt(char* a, size_t size, size_t key) {
-    for (size_t i = 0; i < size; i++)
-    {
-        const __m128i xor_key_m128 = _mm_cvtsi32_si128(key);
-        const __m128i val_m128 = _mm_cvtsi32_si128(a[i]);
-        const __m128i xored_val_m128 = _mm_xor_epi32(val_m128, xor_key_m128);
-
-        a[i] = _mm_cvtsi128_si32(xored_val_m128);
-    }
-};
-
-template<size_t size, size_t key>
+template<typename T, size_t size, size_t key>
 class Obf {
 public:
-    constexpr Obf(const char* str) {
+    constexpr Obf(const T* str) {
         for (size_t i = 0; i < size; i++)
             data[i] = str[i];
 
         encrypt(data, size, key);
     }
 
-    constexpr const char* getData() const {
-        decrypt(const_cast<char*>(data), size, key);
+    constexpr const T* getData() const {
+        decrypt(const_cast<T*>(data), size, key);
 
         return &data[0];
     }
 
 private:
-    char data[size]{};
+    T data[size]{};
 };
 
-#define OBFW(n) \
-    []() -> const wchar_t* const { \
-        constexpr auto O = ObfW<sizeof(n)/sizeof(n[0]), KEY>(n); \
-        return O.getData(); \
-    }()
-
-#define OBF(n) \
-    []() -> const char* const { \
-        constexpr auto O = Obf<sizeof(n)/sizeof(n[0]), KEY>(n); \
+// Obfuscation macro
+#define OBF(type, n) \
+    []() -> const type* const { \
+        constexpr auto O = Obf<type, sizeof(n)/sizeof(n[0]), KEY>(n); \
         return O.getData(); \
     }()
 #endif

