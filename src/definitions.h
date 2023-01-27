@@ -1,5 +1,6 @@
 #pragma once
 #include <windows.h>
+#include <winhttp.h>
 
 //
 // Structs
@@ -60,14 +61,62 @@ using f_RtlInitAnsiString = NTSTATUS(__fastcall*)(
 	_In_opt_ PCSTR SourceString
 	);
 
-using f_URLDownloadToFileW = HRESULT(__fastcall*)(
-	_In_opt_	LPUNKNOWN pCaller,
-	_In_		LPCWSTR szURL,
-	_In_opt_	LPCWSTR szFileName,
-	_Reserved_	DWORD dwReserved,
-	_In_opt_	LPBINDSTATUSCALLBACK lpfnCB
-	);
-
 using f_NtDeleteFile = NTSTATUS(__fastcall*)(
 	_In_ POBJECT_ATTRIBUTES ObjectAttributes
 	);
+
+using f_WinHttpOpen = HINTERNET(__fastcall*)(
+	_In_opt_		LPCWSTR pszAgentW,
+	_In_           DWORD   dwAccessType,
+	_In_           LPCWSTR pszProxyW,
+	_In_           LPCWSTR pszProxyBypassW,
+	_In_           DWORD   dwFlags
+);
+
+using f_WinHttpConnect = HINTERNET(__fastcall*)(
+	_In_ HINTERNET     hSession,
+	_In_ LPCWSTR       pswzServerName,
+	_In_ INTERNET_PORT nServerPort,
+	_In_ DWORD         dwReserved
+);
+
+using f_WinHttpOpenRequest = HINTERNET(__fastcall*)(
+	_In_ HINTERNET hConnect,
+	_In_ LPCWSTR   pwszVerb,
+	_In_ LPCWSTR   pwszObjectName,
+	_In_ LPCWSTR   pwszVersion,
+	_In_ LPCWSTR   pwszReferrer,
+	_In_ LPCWSTR* ppwszAcceptTypes,
+	_In_ DWORD     dwFlags
+);
+
+using f_WinHttpSendRequest = BOOL(__fastcall*)(
+	_In_          HINTERNET hRequest,
+	_In_opt_ LPCWSTR   lpszHeaders,
+	_In_           DWORD     dwHeadersLength,
+	_In_opt_ LPVOID    lpOptional,
+	_In_           DWORD     dwOptionalLength,
+	_In_           DWORD     dwTotalLength,
+	_In_           DWORD_PTR dwContext
+);
+
+using f_WinHttpReceiveResponse = BOOL(__fastcall*)(
+	_In_ HINTERNET hRequest,
+	_In_ LPVOID    lpReserved
+);
+
+using f_WinHttpQueryDataAvailable = BOOL(__fastcall*)(
+	_In_  HINTERNET hRequest,
+	_Out_ LPDWORD   lpdwNumberOfBytesAvailable
+);
+
+using f_WinHttpReadData = BOOL(__fastcall*)(
+	_In_  HINTERNET hRequest,
+	_Out_ LPVOID    lpBuffer,
+	_In_  DWORD     dwNumberOfBytesToRead,
+	_Out_ LPDWORD   lpdwNumberOfBytesRead
+);
+
+using f_WinHttpCloseHandle = BOOL(__fastcall*)(
+	_In_ HINTERNET hInternet
+);

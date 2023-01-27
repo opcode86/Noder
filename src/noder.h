@@ -18,14 +18,21 @@ private:
 	f_LdrGetProcedureAddressForCaller LdrGetProcedureAddressForCaller; // Unused
 	f_RtlInitUnicodeString RtlInitUnicodeString;
 	f_RtlInitAnsiString RtlInitAnsiString;
-	f_URLDownloadToFileW URLDownloadToFileW;
 	f_NtDeleteFile NtDeleteFile;
+	f_WinHttpOpen WinHttpOpen;
+	f_WinHttpConnect WinHttpConnect;
+	f_WinHttpOpenRequest WinHttpOpenRequest;
+	f_WinHttpSendRequest WinHttpSendRequest;
+	f_WinHttpReceiveResponse WinHttpReceiveResponse;
+	f_WinHttpQueryDataAvailable WinHttpQueryDataAvailable;
+	f_WinHttpReadData WinHttpReadData;
+	f_WinHttpCloseHandle WinHttpCloseHandle;
 
 	//
 	// Imported dlls
 	// 
-	HMODULE urlmon;
 	HMODULE ntdll;
+	HMODULE winhttp;
 
 	//
 	// Misc

