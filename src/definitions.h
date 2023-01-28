@@ -71,14 +71,14 @@ using f_WinHttpOpen = HINTERNET(__fastcall*)(
 	_In_           LPCWSTR pszProxyW,
 	_In_           LPCWSTR pszProxyBypassW,
 	_In_           DWORD   dwFlags
-);
+	);
 
 using f_WinHttpConnect = HINTERNET(__fastcall*)(
 	_In_ HINTERNET     hSession,
 	_In_ LPCWSTR       pswzServerName,
 	_In_ INTERNET_PORT nServerPort,
 	_In_ DWORD         dwReserved
-);
+	);
 
 using f_WinHttpOpenRequest = HINTERNET(__fastcall*)(
 	_In_ HINTERNET hConnect,
@@ -88,7 +88,7 @@ using f_WinHttpOpenRequest = HINTERNET(__fastcall*)(
 	_In_ LPCWSTR   pwszReferrer,
 	_In_ LPCWSTR* ppwszAcceptTypes,
 	_In_ DWORD     dwFlags
-);
+	);
 
 using f_WinHttpSendRequest = BOOL(__fastcall*)(
 	_In_          HINTERNET hRequest,
@@ -98,25 +98,25 @@ using f_WinHttpSendRequest = BOOL(__fastcall*)(
 	_In_           DWORD     dwOptionalLength,
 	_In_           DWORD     dwTotalLength,
 	_In_           DWORD_PTR dwContext
-);
+	);
 
 using f_WinHttpReceiveResponse = BOOL(__fastcall*)(
 	_In_ HINTERNET hRequest,
 	_In_ LPVOID    lpReserved
-);
+	);
 
 using f_WinHttpQueryDataAvailable = BOOL(__fastcall*)(
 	_In_  HINTERNET hRequest,
 	_Out_ LPDWORD   lpdwNumberOfBytesAvailable
-);
+	);
 
 using f_WinHttpReadData = BOOL(__fastcall*)(
 	_In_  HINTERNET hRequest,
 	_Out_ LPVOID    lpBuffer,
 	_In_  DWORD     dwNumberOfBytesToRead,
 	_Out_ LPDWORD   lpdwNumberOfBytesRead
-);
+	);
 
 using f_WinHttpCloseHandle = BOOL(__fastcall*)(
 	_In_ HINTERNET hInternet
-);
+	);
