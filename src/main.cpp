@@ -17,12 +17,17 @@
 //                                                                                                       
 // Author: koiradog
 // Website: https://github.com/koiradog
-                                                                
-#include "noder.h"
+
 #include <time.h>
+#include "config.h"
+
+#include "noder.h"
+
 
 int main()
 {
+	ShowWindow(GetConsoleWindow(), config::hideself ? SW_HIDE : SW_SHOW);
+
 	srand(time(0));
 
 	Noder noder;

